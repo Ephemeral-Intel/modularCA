@@ -1,0 +1,18 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ModularCA.Shared.Models.Crl
+{
+    public class UpdateCrlConfigurationRequest
+    {
+        public string Description { get; set; } = string.Empty;
+        public TimeSpan Interval { get; set; }
+        public TimeSpan OverlapPeriod { get; set; }
+        public bool EnableDelta { get; set; }
+        public TimeSpan? DeltaInterval { get; set; }
+    }
+
+}

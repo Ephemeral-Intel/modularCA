@@ -1,0 +1,67 @@
+# === ModularCA Bootstrap YAML Configuration ===
+# This file is used to initialize the root CA and signing profiles during bootstrap.
+# Delete this file or reset after bootstrap to prevent reinitialization.
+
+ca:
+  subject:
+    # Common Name of the root CA (required)
+    cN: "ModularCA Root CA"
+    # Organization name (optional)
+    o: "ModularCA"
+    # Organizational Unit (optional)
+    oU: ["Infrastructure"]
+    # Domain Components (optional, multiple allowed)
+    dC: ["modularca", "local"]
+    # Location
+    l: "Austin"
+    sT: "Texas"
+    c: "US"
+
+  # Supported algorithms (case-insensitive):
+  #   RSA, DSA, ECDSA, ED25519, DILITHIUM2, DILITHIUM3, FALCON512, FALCON1024
+  algorithm: RSA
+
+  # Key sizes:
+  # - RSA: 2048, 3072, 4096
+  # - DSA: 2048, 3072
+  # - ECDSA: 256, 384, 521
+  # - ED25519: ignored
+  # - PQC (Dilithium/Falcon): level = 2, 3, 5 or parameter set name
+  keySize: 4096
+
+  # Validity in years (default: 10)
+  validityYears: 20
+
+signingProfile:
+  name: "default"
+  isCa: true
+
+  # Key usage values (must be one or more):
+  # - digitalSignature, keyEncipherment, keyCertSign, crlSign, dataEncipherment
+  keyUsages:
+    - digitalSignature
+    - keyCertSign
+    - crlSign
+
+  # Extended key usage OIDs or strings (optional)
+  extendedKeyUsages:
+    - 1.3.6.1.5.5.7.3.1  # TLS Web Server Authentication
+
+  # Include root CA in issued cert chain?
+  includeRootInChain: true
+
+sqlApp:
+  # SQL login details for verifying if DB is seeded
+  host: "localhost"
+  port: 3306
+  username: "root"
+  password: "!@QWASZX12qwaszx"
+  database: "modularca-app"
+
+sqlAudit:
+  # SQL login details for verifying if DB is seeded
+  host: "localhost"
+  port: 3306
+  username: "root"
+  password: "password"
+  database: "modularca-audit"

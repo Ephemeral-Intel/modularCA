@@ -1,0 +1,13 @@
+app:
+  host: "localhost"
+  port: 3306
+  username: "modularca"
+  password: "password"
+  database: "modularca-app"
+
+audit:
+  host: "localhost"
+  port: 3306
+  username: "audit"
+  password: "password"
+  database: "modularca-audit"
