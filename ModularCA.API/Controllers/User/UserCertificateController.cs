@@ -8,12 +8,12 @@ using ModularCA.Core.Utils;
 using System.Security.Cryptography.X509Certificates;
 using System.Runtime.ConstrainedExecution;
 
-namespace ModularCA.API.Controllers.Admin;
+namespace ModularCA.API.Controllers.User;
 
 
 [ApiController]
-[Route("api/admin/certificate")]
-public class AdminCertificateController(
+[Route("api/user/certificate")]
+public class UserCertificateController(
     ICertificateStore certStore,
     ICertificateAuthority certAuthority
 ) : ControllerBase
@@ -25,8 +25,12 @@ public class AdminCertificateController(
     public async Task<ActionResult<IEnumerable<CertificateInfoModel>>> ListCertificates()
     {
         var certs = await _certStore.ListAsync();
-        var nonCaCerts = certs.Where(c => !c.IsCA && !(c.SubjectDN?.Contains("System Signing Ca Certificate") ?? false))
+        
+        // Filter to non-CA certs only
+        var nonCaCerts = certs
+            .Where(c => !c.IsCA && !(c.SubjectDN?.Contains("System Signing CA Certificate") ?? false))
             .ToList();
+        
         return Ok(nonCaCerts);
     }
 
@@ -35,6 +39,9 @@ public class AdminCertificateController(
     {
         var cert = await _certStore.GetCertificateInfoAsync(serial);
         if (cert == null)
+            return NotFound();
+        // Hide CA certs and System cert
+        if (cert.IsCA || cert.SubjectDN?.Contains("System Signing CA Certificate") == true)
             return NotFound();
         return Ok(cert);
     }

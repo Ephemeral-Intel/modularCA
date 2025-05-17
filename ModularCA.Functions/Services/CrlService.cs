@@ -80,7 +80,7 @@ public class CrlService(ModularCADbContext dbContext, X509Certificate issuerCert
         return encoded;
     }
 
-    private int GetCrlReasonCode(string reason)
+    private static int GetCrlReasonCode(string reason)
     {
         return reason.ToLower() switch
         {

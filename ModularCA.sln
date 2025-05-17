@@ -5,11 +5,11 @@ VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModularCA.API", "ModularCA.API\ModularCA.API.csproj", "{F88448A5-1989-47BD-8A05-697E3AA18E3E}"
 EndProject
-Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "modularca.adminui", "ModularCA.AdminUI\modularca.adminui.esproj", "{C44C40D0-1A5A-FF07-01D4-E71D1D2F3582}"
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "modularca.adminui", "modularca.adminui\modularca.adminui.esproj", "{C44C40D0-1A5A-FF07-01D4-E71D1D2F3582}"
 EndProject
-Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "modularca.userui", "ModularCA.UserUI\modularca.userui.esproj", "{1EFF1D93-B9BA-1FD8-6EAF-92CF1B11B924}"
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "modularca.userui", "modularca.userui\modularca.userui.esproj", "{1EFF1D93-B9BA-1FD8-6EAF-92CF1B11B924}"
 EndProject
-Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "modularca.publicui", "ModularCA.PublicUI\modularca.publicui.esproj", "{89DE1883-508C-8435-7E04-56EE8D65AAB0}"
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "modularca.publicui", "modularca.publicui\modularca.publicui.esproj", "{89DE1883-508C-8435-7E04-56EE8D65AAB0}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
@@ -24,10 +24,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dashboards", "dashboards", "{1AB1613B-DE4D-41B7-9D94-F9BF60343D71}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{B8773905-62D8-49CD-ABF7-144C5C117F12}"
-	ProjectSection(SolutionItems) = preProject
-		config\BootstrapConfig.yaml.example = config\BootstrapConfig.yaml.example
-		config\db.yaml.example = config\db.yaml.example
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{C092B4A4-843E-477A-BAE0-673124BC9578}"
 EndProject

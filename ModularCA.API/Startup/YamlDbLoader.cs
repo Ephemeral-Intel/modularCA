@@ -4,9 +4,9 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace ModularCA.API.Startup;
 
-public static class YamlBootstrapLoader
+public static class YamlDbLoader
 {
-    public static BootstrapConfig Load(string path)
+    public static DbConfig Load(string path)
     {
         if (!File.Exists(path))
             throw new FileNotFoundException($"YAML config file not found: {path}");
@@ -18,6 +18,6 @@ public static class YamlBootstrapLoader
             .IgnoreUnmatchedProperties()
             .Build();
 
-        return deserializer.Deserialize<BootstrapConfig>(yaml);
+        return deserializer.Deserialize<DbConfig>(yaml);
     }
 }

@@ -7,6 +7,8 @@ namespace ModularCA.Core.Interfaces
     public interface ICertificateIssuanceService
     {
         Task<string> IssueCertificateAsync(Guid csrId, DateTime? notBefore, DateTime? notAfter, bool includeRoot);
+
+        Task<string> ReissueCertificateAsync(Guid? certId, string? certSN, Guid? csrId, DateTime? notBefore, DateTime? notAfter, bool includeRoot);
     }
 
 

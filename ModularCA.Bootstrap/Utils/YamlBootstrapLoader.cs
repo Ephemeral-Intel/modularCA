@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace ModularCA.Bootstrap
+namespace ModularCA.Bootstrap.Utils
 {
     public static class YamlBootstrapLoader
     {

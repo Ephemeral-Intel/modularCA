@@ -15,14 +15,14 @@ public class AdminCertProfileController(ICertProfileService certProfileService) 
 {
     private readonly ICertProfileService _certProfileService = certProfileService;
 
-    [HttpGet]
+    [HttpGet("list")]
     public async Task<IActionResult> GetAll()
     {
         var profiles = await _certProfileService.GetAllAsync();
         return Ok(profiles);
     }
 
-    [HttpPost]
+    [HttpPost("create")]
     public async Task<IActionResult> Create([FromBody] CreateCertProfileRequest request)
     {
         var result = await _certProfileService.CreateAsync(request);

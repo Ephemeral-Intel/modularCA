@@ -18,7 +18,7 @@ namespace ModularCA.API.Startup
         public static string RetrieveFromDatabase(string name)
         {
             var configPath = Path.Combine(AppContext.BaseDirectory, "config", "db.yaml");
-            var config = YamlBootstrapLoader.Load(configPath);
+            var config = YamlDbLoader.Load(configPath);
             var appConnStr = $"Server={config.App.Host};Port={config.App.Port};Database={config.App.Database};Uid={config.App.Username};Pwd={config.App.Password};";
             var options = new DbContextOptionsBuilder<ModularCADbContext>()
             .UseMySql(appConnStr,

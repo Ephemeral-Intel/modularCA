@@ -2,22 +2,20 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ModularCA.Core.Interfaces;
+using ModularCA.Core.Utils;
 using ModularCA.Functions.Services;
 using ModularCA.Shared.Models.Csr;
-using ModularCA.Shared.Models.Issuance;
 
 namespace ModularCA.API.Controllers.Admin;
 
 [ApiController]
-[Route("api/admin/csr")]
+[Route("api/admin/request")]
 [AllowAnonymous] // Replace with [Authorize(Roles = "CAAdmin,SuperAdmin")] later
-public class AdminCsrController(
-    ICsrService csrService,
-    ICertificateIssuanceService certificateIssuanceService
+public class AdminCertSignRequestController(
+    ICsrService csrService
 ) : ControllerBase
 {
     private readonly ICsrService _csrService = csrService;
-    private readonly ICertificateIssuanceService _certificateIssuanceService = certificateIssuanceService;
 
 
     [HttpPost("generate")]
@@ -27,11 +25,12 @@ public class AdminCsrController(
         return Ok(new { csr = pem });
     }
 
-    [HttpPost("issue")]
-    public async Task<IActionResult> IssueCertificate([FromBody] IssueCertificateRequest req)
+    [HttpPost("upload")]
+    public async Task<IActionResult> UploadCsrRequest([FromBody] UploadCsrRequest request)
     {
-        var cert = await _certificateIssuanceService.IssueCertificateAsync(req.CsrId, req.NotBefore, req.NotAfter, req.IncludeRoot);
-        return File(Encoding.UTF8.GetBytes(cert), "application/x-pem-file", "issued-cert.pem");
+
+        _ = await _csrService.UploadCsrAsync(request.Pem, request.CertificateProfileId, request.SigningProfileId);
+        return Ok();
     }
 
 }

@@ -28,6 +28,8 @@ namespace ModularCA.Core.Models
         public DateTime ValidTo { get; set; }
         public bool Revoked { get; set; }
         public string RevocationReason { get; set; } = string.Empty;
+
+        public DateTime? RevocationDate { get; set; }
         public Guid SigningProfileId { get; set; }
         public Guid CertProfileId { get; set; }
 

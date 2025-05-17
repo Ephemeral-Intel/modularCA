@@ -27,7 +27,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 var configPath = Path.Combine(AppContext.BaseDirectory, "config", "db.yaml");
-var dbConfig = YamlBootstrapLoader.Load(configPath);
+var dbConfig = YamlDbLoader.Load(configPath);
 var appConnStr = $"Server={dbConfig.App.Host};Port={dbConfig.App.Port};Database={dbConfig.App.Database};Uid={dbConfig.App.Username};Pwd={dbConfig.App.Password};";
 builder.Services.AddDbContext<ModularCADbContext>(options =>
     options.UseMySql(
@@ -40,6 +40,8 @@ builder.Services.AddScoped<ISigningProfileService, EfSigningProfileService>();
 builder.Services.AddScoped<ICertificateIssuanceService, CertificateIssuanceService>();
 
 builder.Services.AddScoped<ICsrService, CsrService>();
+
+builder.Services.AddScoped<ICertificateRevocationService, CertificateRevocationService>();
 
 // Configure dependency injection
 var (signers, rawFullCAs, trustedCAs) = StartupKeystoreLoader.LoadAll(

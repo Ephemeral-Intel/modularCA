@@ -10,6 +10,8 @@ namespace ModularCA.Core.Interfaces
     public interface ICsrService
     {
         Task<string> GenerateCsrAsync(CreateCsrRequest request);
+
+        Task<string> UploadCsrAsync(string pem, Guid certProfileId, Guid signingProfileId);
     }
 
 }

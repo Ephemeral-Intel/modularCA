@@ -19,7 +19,6 @@ using System.Security.Cryptography.X509Certificates;
 using Microsoft.EntityFrameworkCore;
 using static ModularCA.Bootstrap.Services.KeystoreService;
 using Org.BouncyCastle.Pkcs;
-using ModularCA.Bootstrap;
 using ModularCA.Core.Implementations;
 using Org.BouncyCastle.Math;
 using ModularCA.Core.Models;
@@ -279,13 +278,13 @@ public class BootstrapModularCA
             
             }
             Console.WriteLine("✅ Destruction confirmed. Proceeding...\n");
-            DeleteArtifacts(certPath, trustPath, db, conn, bootstrapConfig);
+            DeleteArtifacts(certPath, trustPath);
             ReconstructDatabase(db, conn, bootstrapConfig);
             
         }
     }
 
-    public static void DeleteArtifacts(string certPath, string trustPath, BootstrapDbContext db, MySqlConnection conn, YamlBootstrapLoader.BootstrapConfig bootstrapConfig)
+    public static void DeleteArtifacts(string certPath, string trustPath)
     {
         if (File.Exists(certPath))
             File.Delete(certPath);
@@ -300,30 +299,12 @@ public class BootstrapModularCA
         {
             Console.WriteLine($"(i) {trustPath} not found. Skipping deletion.");
         }
-
-        try
-        {
-
-            using var dropCmd = new MySqlCommand($"DROP DATABASE IF EXISTS `{bootstrapConfig.SqlApp.Database}`", conn);
-            dropCmd.ExecuteNonQuery();
-
-            using var createCmd = new MySqlCommand($"CREATE DATABASE `{bootstrapConfig.SqlApp.Database}`", conn);
-            createCmd.ExecuteNonQuery();
-            db.Database.EnsureCreated();
-
-            Console.WriteLine($"✓ Database '{bootstrapConfig.SqlApp.Database}' dropped and recreated.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"(!!) Failed to reset database: {ex.Message}");
-        }
     }
 
     public static void ReconstructDatabase(BootstrapDbContext db, MySqlConnection conn, YamlBootstrapLoader.BootstrapConfig bootstrapConfig)
     {
         try
         {
-            conn.Open();
             using var dropCmd = new MySqlCommand($"DROP DATABASE IF EXISTS `{bootstrapConfig.SqlApp.Database}`", conn);
             dropCmd.ExecuteNonQuery();
             using var createCmd = new MySqlCommand($"CREATE DATABASE `{bootstrapConfig.SqlApp.Database}`", conn);
@@ -702,7 +683,7 @@ public class BootstrapModularCA
     {
         var yamlLines = keystorePasswords.Select(kvp =>
         {
-            var secondary = secondaryPasses.ContainsKey(kvp.Key) ? secondaryPasses[kvp.Key] : "";
+            var secondary = secondaryPasses.TryGetValue(kvp.Key, out string? value) ? value : "";
             return $"{kvp.Key}: {secondary}";
         }).ToList();
 

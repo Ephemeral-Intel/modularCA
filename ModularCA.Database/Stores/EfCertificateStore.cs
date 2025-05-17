@@ -31,6 +31,7 @@ public class EfCertificateStore(ModularCADbContext dbContext) : ICertificateStor
             ValidTo = info.ValidTo,
             Revoked = info.Revoked,
             RevocationReason = info.RevocationReason,
+            RevocationDate = info.RevocationDate,
             CertProfileId = info.CertProfileId,
             SigningProfileId = info.SigningProfileId,
             SubjectAlternativeNamesJson = JsonSerializer.Serialize(info.SubjectAlternativeNames),
@@ -56,6 +57,7 @@ public class EfCertificateStore(ModularCADbContext dbContext) : ICertificateStor
 
         return new CertificateInfoModel
         {
+            Pem = entity.Pem,
             CertificateId = entity.CertificateId,
             SerialNumber = entity.SerialNumber,
             SubjectDN = entity.SubjectDN,
@@ -68,6 +70,7 @@ public class EfCertificateStore(ModularCADbContext dbContext) : ICertificateStor
             ValidTo = entity.ValidTo,
             Revoked = entity.Revoked,
             RevocationReason = entity.RevocationReason ?? string.Empty,
+            RevocationDate = entity.RevocationDate,
             SigningProfileId = entity.SigningProfileId ?? Guid.Empty,
             SubjectAlternativeNames = string.IsNullOrWhiteSpace(entity.SubjectAlternativeNamesJson)
     ? new List<string>()
@@ -102,6 +105,7 @@ public class EfCertificateStore(ModularCADbContext dbContext) : ICertificateStor
             ValidTo = c.ValidTo,
             Revoked = c.Revoked,
             RevocationReason = c.RevocationReason,
+            RevocationDate = c.RevocationDate,
             SigningProfileId = c.SigningProfileId ?? Guid.Empty,
             SubjectAlternativeNames = string.IsNullOrWhiteSpace(c.SubjectAlternativeNamesJson)
     ? new List<string>()
@@ -116,6 +120,32 @@ public class EfCertificateStore(ModularCADbContext dbContext) : ICertificateStor
     : JsonSerializer.Deserialize<List<string>>(c.ExtendedKeyUsagesJson)!,
 
         });
+    }
+
+    public async Task<CertificateInfoModel?> GetCertificateBySerialNumberAsync(string serialNumber)
+    {
+        var entity = await _dbContext.Certificates
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.SerialNumber == serialNumber);
+        if (entity == null) return null;
+        return new CertificateInfoModel
+        {
+            Pem = entity.Pem,
+            CertificateId = entity.CertificateId,
+            SerialNumber = entity.SerialNumber,
+            SubjectDN = entity.SubjectDN,
+            Issuer = entity.Issuer,
+            NotBefore = entity.NotBefore,
+            NotAfter = entity.NotAfter,
+            Thumbprints = entity.Thumbprints,
+            IsCA = entity.IsCA,
+            ValidFrom = entity.ValidFrom,
+            ValidTo = entity.ValidTo,
+            Revoked = entity.Revoked,
+            RevocationReason = entity.RevocationReason ?? string.Empty,
+            RevocationDate = entity.RevocationDate,
+            SigningProfileId = entity.SigningProfileId ?? Guid.Empty,
+        };
     }
 
     public async Task<List<CertificateInfoModel>> GetAllCertificatesAsync()
@@ -136,6 +166,7 @@ public class EfCertificateStore(ModularCADbContext dbContext) : ICertificateStor
             ValidTo = c.ValidTo,
             Revoked = c.Revoked,
             RevocationReason = c.RevocationReason ?? string.Empty,
+            RevocationDate = c.RevocationDate,
             SigningProfileId = c.SigningProfileId ?? Guid.Empty,
             SubjectAlternativeNames = string.IsNullOrWhiteSpace(c.SubjectAlternativeNamesJson)
     ? new List<string>()
@@ -180,6 +211,7 @@ public class EfCertificateStore(ModularCADbContext dbContext) : ICertificateStor
             ValidTo = entity.ValidTo,
             Revoked = false,
             RevocationReason = "", // TODO: support revocation table later
+            RevocationDate = entity.RevocationDate,
             Pem = entity.Pem,
             SigningProfileId = entity.SigningProfileId ?? Guid.Empty,
         };

@@ -14,14 +14,14 @@ namespace ModularCA.API.Controllers.Admin
     {
         private readonly ISigningProfileService _service = service;
 
-        [HttpGet]
+        [HttpGet("list")]
         public async Task<IActionResult> GetAll()
         {
             var profiles = await _service.GetAllAsync();
             return Ok(profiles);
         }
 
-        [HttpPost]
+        [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateSigningProfileRequest r) =>
             CreatedAtAction(nameof(GetAll), new { }, await _service.CreateAsync(r));
 
