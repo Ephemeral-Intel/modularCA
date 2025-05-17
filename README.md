@@ -7,6 +7,12 @@ implement ACME features to allow internal services to renew their certificates.
 The current frontend is written in React with TypeScript. Only the admin frontend
 has any work done, and it is rudimentary and for viewing only.
 
+## Reasoning
+There is a low amount of competition and open source CA projects. A lot of the great CA features
+are only available in commercial or paid subscription products. By developing a new application 
+with those features already being free in mind, Modular CA aims to provide a product that can
+compare with commercial solutions.
+
 ## This program is still in development
 - There is no current release for production.
 - All the current code is in testing. As such, a lot of sensitive data is output.
@@ -32,18 +38,14 @@ With this in mind, a lot of the features will be focused on the backend.
 - Add CRL schedule generation and testing endpoint
 - Add endpoint to retrieve CA cert(s) and CRLs
 
-## Reasoning
-There is a low amount of competition and open source CA projects. A lot of the great CA features
-are only available in commercial or paid subscription products. By developing a new application 
-with those features already being free in mind, Modular CA aims to provide a product that can
-compare with commercial solutions.
-
 ## Development
 
 Contributors are welcomed! Any feature requests are also welcomed.
 
- Visual Studio is currently being used for coding. 
+Visual Studio is currently being used for coding. 
+
 DotNet 8.0 is needed to construct the API.
+
 [Node.js](https://nodejs.org/en/download) v22 is being used for frontend development.
 
 ## Secure By Design Principles
