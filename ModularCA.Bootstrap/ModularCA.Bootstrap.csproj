@@ -19,6 +19,7 @@
 	<ProjectReference Include="..\ModularCA.Keystore\ModularCA.Keystore.csproj" />
 	<ProjectReference Include="..\ModularCA.Shared\ModularCA.Shared.csproj" />
 	  <ProjectReference Include="..\ModularCA.Core\ModularCA.Core.csproj" />
+	  <ProjectReference Include="..\ModularCA.Auth\ModularCA.Auth.csproj" />
   </ItemGroup>
 
 </Project>

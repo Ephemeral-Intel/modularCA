@@ -1,7 +1,13 @@
 ﻿namespace ModularCA.Core.Config
 {
 
-/*
+    public class Config
+    {
+        public DbConfig DB { get; set; } = new();
+
+        public JwtConfig JWT { get; set; } = new();
+    }
+
     public class DbConfig
     {
         public DbInstance App { get; set; } = new();
@@ -16,6 +22,10 @@
         public string Password { get; set; } = string.Empty;
         public string Database { get; set; } = string.Empty;
     }
-*/
 
+    public class JwtConfig
+    {
+        public string Secret { get; set; } = string.Empty;
+        public int ExpirationMinutes { get; set; } = 60;
+    }
 }

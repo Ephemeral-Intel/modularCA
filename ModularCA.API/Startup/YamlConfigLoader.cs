@@ -1,12 +1,13 @@
 ﻿using ModularCA.API.Models;
+using ModularCA.Core.Config;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
 namespace ModularCA.API.Startup;
 
-public static class YamlDbLoader
+public static class YamlConfigLoader
 {
-    public static DbConfig Load(string path)
+    public static Config Load(string path)
     {
         if (!File.Exists(path))
             throw new FileNotFoundException($"YAML config file not found: {path}");
@@ -14,10 +15,10 @@ public static class YamlDbLoader
         var yaml = File.ReadAllText(path);
 
         var deserializer = new DeserializerBuilder()
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
+            .WithNamingConvention(PascalCaseNamingConvention.Instance)
             .IgnoreUnmatchedProperties()
             .Build();
 
-        return deserializer.Deserialize<DbConfig>(yaml);
+        return deserializer.Deserialize<Config>(yaml);
     }
 }

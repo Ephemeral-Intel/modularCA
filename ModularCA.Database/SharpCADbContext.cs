@@ -20,6 +20,15 @@ public class ModularCADbContext(DbContextOptions<ModularCADbContext> options) : 
     public DbSet<FeatureFlagEntity> FeatureFlags { get; set; }
     public DbSet<CrlConfigurationEntity> CrlConfigurations { get; set; }
 
+    public DbSet<CertificateAccessListEntity> CertificateAccessLists { get; set; }
+    public DbSet<UserEntity> Users { get; set; }
+
+    public DbSet<UserRoleEntity> UserRoles { get; set; }
+
+    public DbSet<CertificateAuthorityEntity> CertificateAuthorities { get; set; }
+
+    public DbSet<RefreshTokenEntity> RefreshTokens { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -39,13 +48,46 @@ public class ModularCADbContext(DbContextOptions<ModularCADbContext> options) : 
         modelBuilder.Entity<CertificateEntity>(c =>
         {
             c.HasIndex(c => c.SerialNumber).IsUnique();
-            c.HasIndex(c => c.SubjectDN);
+            c.HasIndex(c => c.SubjectDN).IsUnique();
         });
         modelBuilder.Entity<KeystoreEntryEntity>().HasIndex(k => k.Name).IsUnique();
         modelBuilder.Entity<OIDOptionEntity>().HasIndex(o => o.OID).IsUnique();
 
         modelBuilder.Entity<FeatureFlagEntity>().HasIndex(f => f.Name).IsUnique();
         modelBuilder.Entity<CrlConfigurationEntity>().HasIndex(c =>c.Name).IsUnique();
+
+        modelBuilder.Entity<CertificateAccessListEntity>()
+        .HasIndex(x => new { x.UserId, x.CertificateId })
+        .IsUnique();
+
+        modelBuilder.Entity<CertificateAccessListEntity>()
+            .HasOne(x => x.User)
+            .WithMany(u => u.CertificateAccess)
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<CertificateAccessListEntity>()
+            .HasOne(x => x.Certificate)
+            .WithMany(c => c.AccessList)
+            .HasForeignKey(x => x.CertificateId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<UserRoleEntity>()
+            .HasIndex(ur => new { ur.UserId, ur.Id })
+            .IsUnique();
+        modelBuilder.Entity<UserEntity>()
+            .HasIndex(ur => ur.Username).IsUnique();
+        modelBuilder.Entity<UserEntity>()
+            .HasIndex(ur => ur.Id).IsUnique();
+        modelBuilder.Entity<UserEntity>()
+            .HasIndex(ur => ur.Email).IsUnique();
+        modelBuilder.Entity<CertificateAuthorityEntity>()
+            .HasIndex(ur => ur.Name).IsUnique();
+
+        modelBuilder.Entity<CertificateAccessListEntity>()
+        .HasOne(c => c.GrantedByUser)
+        .WithMany() // Or `.WithMany(u => u.CertificateAccessLists)` if a collection exists
+        .HasForeignKey("GrantedByUserId"); // Replace with the actual foreign key property
+
 
     }
 }

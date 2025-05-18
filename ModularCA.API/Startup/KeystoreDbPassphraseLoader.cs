@@ -17,9 +17,9 @@ namespace ModularCA.API.Startup
     {
         public static string RetrieveFromDatabase(string name)
         {
-            var configPath = Path.Combine(AppContext.BaseDirectory, "config", "db.yaml");
-            var config = YamlDbLoader.Load(configPath);
-            var appConnStr = $"Server={config.App.Host};Port={config.App.Port};Database={config.App.Database};Uid={config.App.Username};Pwd={config.App.Password};";
+            var configPath = Path.Combine(AppContext.BaseDirectory, "config", "config.yaml");
+            var config = YamlConfigLoader.Load(configPath);
+            var appConnStr = $"Server={config.DB.App.Host};Port={config.DB.App.Port};Database={config.DB.App.Database};Uid={config.DB.App.Username};Pwd={config.DB.App.Password};";
             var options = new DbContextOptionsBuilder<ModularCADbContext>()
             .UseMySql(appConnStr,
                       ServerVersion.AutoDetect(appConnStr))  // Adjust MariaDB version

@@ -1,0 +1,17 @@
+JWT:
+  Secret: "your_jwt_secret"
+
+DB:
+  App:
+    Host: "localhost"
+    Port: 3306
+    Username: "modularca"
+    Password: "password"
+    Database: "modularca-app"
+
+  Audit:
+    Host: "localhost"
+    Port: 3306
+    Username: "audit"
+    Password: "password"
+    Database: "modularca-audit"

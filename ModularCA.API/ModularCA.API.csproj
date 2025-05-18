@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="8.2.0" />
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.16" />
 	<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.13" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
@@ -16,7 +17,7 @@
 	<ProjectReference Include="..\ModularCA.Core\ModularCA.Core.csproj" />
 	<ProjectReference Include="..\ModularCA.Keystore\ModularCA.Keystore.csproj" />
 	<ProjectReference Include="..\ModularCA.Functions\ModularCA.Functions.csproj" />
-
+	<ProjectReference Include="..\ModularCA.Auth\ModularCA.Auth.csproj" />
   </ItemGroup>
 
 	

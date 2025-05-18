@@ -61,10 +61,8 @@ public class CertificateEntity
     public byte[]? EncryptedAesForPrivateKey { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    /*public CertificateEntity() { }
+    public virtual ICollection<CertificateAccessListEntity> AccessList { get; set; } = new List<CertificateAccessListEntity>();
 
-    public CertificateEntity(byte[] rawData)
-    {
-        RawCertificate = rawData;
-    }*/
+    public virtual CertificateAuthorityEntity? CertificateAuthority { get; set; }
+
 }

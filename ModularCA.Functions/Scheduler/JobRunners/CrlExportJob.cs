@@ -92,9 +92,11 @@ namespace ModularCA.Functions.Scheduler.JobRunners
                     var updateCrl = await _db.Crls
                         .Where(c => c.TaskId == CrlTask.TaskId)
                         .FirstOrDefaultAsync(cancellationToken);
-                    updateCrl.NextUpdate = nextUpdate;
-                    _db.Crls.Update(updateCrl);
-
+                    if (updateCrl != null)
+                    {
+                        updateCrl.NextUpdate = nextUpdate;
+                        _db.Crls.Update(updateCrl);
+                    }
                     await _db.SaveChangesAsync(cancellationToken);
                 }
               

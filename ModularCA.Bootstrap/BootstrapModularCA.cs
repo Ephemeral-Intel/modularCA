@@ -38,6 +38,8 @@ using Org.BouncyCastle.Asn1.Ocsp;
 using Org.BouncyCastle.Tls;
 using YamlDotNet.Serialization.NamingConventions;
 using YamlDotNet.Serialization;
+using ModularCA.Core.Utils;
+using ModularCA.Auth.Utils;
 
 namespace ModularCA.Bootstrap;
 
@@ -207,15 +209,31 @@ public class BootstrapModularCA
 
         var caCertEntity = GetCertificateFromDb(dbContext, signedCaCert.SubjectDN.ToString());
 
+        var sysCertEntity = GetCertificateFromDb(dbContext, signedSysCert.SubjectDN.ToString());
+
         CreateCrlSchedule(dbContext, caCertEntity);
 
         WriteKeystorePasswordsToFile(configDir, keystorePasswords, keystoreFilePasswords);
+
+        CreateCertificateAuthority(dbContext, caCertEntity);
+
+        CreateCertificateAuthority(dbContext, sysCertEntity);
+
+        var caCertCaEntity = GetCertificateAuthorityFromDb(dbContext, caCertEntity.CertificateId);
+
+        var sysCertCaEntity = GetCertificateAuthorityFromDb(dbContext, sysCertEntity.CertificateId);
+
+        CreateInitialUser(dbContext);
+
+        caCertEntity.CertificateAuthority = caCertCaEntity;
+        sysCertEntity.CertificateAuthority = sysCertCaEntity;
+        dbContext.SaveChanges();
 
         if (dbConnection.State == ConnectionState.Open) {
             dbConnection.Close();
         }
 
-        WriteDatabaseEntriesToFile(configDir, bootstrapConfig);
+        WriteConfigEntriesToFile(configDir, bootstrapConfig);
     }
 
     public static (BootstrapDbContext, MySqlConnection dbConnect) CreateDatabaseConnection(string appConnStr)
@@ -683,6 +701,7 @@ public class BootstrapModularCA
         db.SaveChanges();
         Console.WriteLine($"✓ CRL schedule '{crlSchedule.Name}' added to database.");
     }
+    
     public static CertificateEntity GetCertificateFromDb(BootstrapDbContext db, string certName)
     {
         var cert = db.Certificates
@@ -691,6 +710,33 @@ public class BootstrapModularCA
         if (cert.Result == null)
             throw new Exception("Certificate not found.");
         return cert.Result;
+    }
+
+    public static CertificateAuthorityEntity GetCertificateAuthorityFromDb(BootstrapDbContext db, Guid certName)
+    {
+        var ca = db.CertificateAuthorities
+            .Where(c => c.CertificateId == certName)
+            .FirstOrDefaultAsync();
+        if (ca.Result == null)
+            throw new Exception("Certificate Authority not found.");
+        return ca.Result;
+    }
+
+    public static void CreateCertificateAuthority(BootstrapDbContext db, CertificateEntity caCertificateEntity)
+    {
+        var caName = CertificateUtil.ParseCnFromPem(caCertificateEntity.Pem);
+
+        var caEntity = new CertificateAuthorityEntity
+        {
+            Name = caName,
+            Certificate = caCertificateEntity,
+            CertificateId = caCertificateEntity.CertificateId,
+            IsRoot = true,
+            IsEnabled = true,
+        };
+        db.CertificateAuthorities.Add(caEntity);
+        db.SaveChanges();
+        Console.WriteLine($"✓ Certificate Authority '{caEntity.Name}' added to database.");
     }
 
     public static void WriteKeystorePasswordsToFile(string configDir, Dictionary<string, string> keystorePasswords, Dictionary<string, string> secondaryPasses)
@@ -707,7 +753,7 @@ public class BootstrapModularCA
         Console.WriteLine($"\n📝 Secondary passphrases written to: {yamlPath}");
     }
 
-    public static void WriteDatabaseEntriesToFile(string configDir, YamlBootstrapLoader.BootstrapConfig bootstrapConfig)
+    public static void WriteConfigEntriesToFile(string configDir, YamlBootstrapLoader.BootstrapConfig bootstrapConfig)
     {
         var dbConfig = new
         {
@@ -715,15 +761,56 @@ public class BootstrapModularCA
             Audit = bootstrapConfig.SqlAudit
         };
 
+        var jwtSecret = PasswordUtil.Generate() + PasswordUtil.Generate();
+
+        var JwtConfig = new
+        {
+            Secret = jwtSecret,
+        };
+
+        var appConfig = new
+        {
+            JWT = JwtConfig,
+            DB = dbConfig,
+        };
+
         var serializer = new SerializerBuilder()
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
+            .WithNamingConvention(PascalCaseNamingConvention.Instance)
             .Build();
 
-        var yaml = serializer.Serialize(dbConfig);
+        var yaml = serializer.Serialize(appConfig);
 
-        var yamlPath = Path.Combine(configDir, "db.yaml");
+        var yamlPath = Path.Combine(configDir, "config.yaml");
         File.WriteAllText(yamlPath, yaml);
 
         Console.WriteLine($"\n📝 Database configuration written to: {yamlPath}");
     }
+
+    public static void CreateInitialUser(BootstrapDbContext db)
+    {
+        var password = PasswordUtil.Generate();
+        var initialUser = new UserEntity
+        {
+            Username = "superadmin",
+            PasswordHash = PasswordUtil.HashPassword(password),
+            CreatedAt = DateTime.UtcNow,
+            Roles = new List<UserRoleEntity>() // Ensure collection is initialized
+        };
+        db.Users.Add(initialUser);
+        db.SaveChanges();
+
+        var userRoleEntry = new UserRoleEntity
+        {
+            Role = Shared.Enums.RoleType.SuperAdmin,
+            User = initialUser,
+            UserId = initialUser.Id
+        };
+        db.UserRoles.Add(userRoleEntry);
+
+        initialUser.Roles.Add(userRoleEntry);
+        db.SaveChanges();
+        Console.WriteLine($"✓ Initial user '{initialUser.Username}' created.");
+        Console.WriteLine($"(i) Initial user password: {password}");
+    }
+
 }

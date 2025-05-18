@@ -14,7 +14,7 @@ namespace ModularCA.Core.Utils
             var yaml = File.ReadAllText(path);
 
             var deserializer = new DeserializerBuilder()
-                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .WithNamingConvention(PascalCaseNamingConvention.Instance)
                 .Build();
 
             return deserializer.Deserialize<T>(yaml);

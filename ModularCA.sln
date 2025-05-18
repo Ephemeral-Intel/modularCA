@@ -24,6 +24,11 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dashboards", "dashboards", "{1AB1613B-DE4D-41B7-9D94-F9BF60343D71}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{B8773905-62D8-49CD-ABF7-144C5C117F12}"
+	ProjectSection(SolutionItems) = preProject
+		config\BootstrapConfig.yaml.example = config\BootstrapConfig.yaml.example
+		config.yaml.example = config.yaml.example
+		config\db.yaml.example = config\db.yaml.example
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{C092B4A4-843E-477A-BAE0-673124BC9578}"
 EndProject

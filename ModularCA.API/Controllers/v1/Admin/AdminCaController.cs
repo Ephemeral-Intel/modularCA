@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using ModularCA.Auth.Interfaces;
 using ModularCA.Core.Interfaces;
 using ModularCA.Core.Models;
 using ModularCA.Core.Utils;
@@ -10,13 +12,19 @@ namespace ModularCA.API.Controllers.v1.Admin
 {
     [ApiController]
     [Route("api/v1/admin/authorities")]
-    public class AdminCaController(ICertificateStore certService) : ControllerBase
+    public class AdminCaController(ICertificateStore certService, ICurrentUserService currentUser) : ControllerBase
     {
         private readonly ICertificateStore _certService = certService;
+        private readonly ICurrentUserService _currentUser = currentUser;
 
         [HttpGet]
+        [Authorize(Roles = "SuperAdmin,SystemAdmin,CAAdmin")]
         public async Task<IActionResult> GetValidCaCertificates()
         {
+            await _currentUser.EnsureLoadedAsync();
+            if(!_currentUser.IsAuthenticated || _currentUser.User == null)
+                return Unauthorized();
+
             var certs = await _certService.GetAllCertificatesAsync();
 
             // Filter to CA certs only, and exclude those with "System Signing CA Certificate" in SubjectDN
@@ -28,6 +36,7 @@ namespace ModularCA.API.Controllers.v1.Admin
         }
 
         [HttpGet("include-system-ca")]
+        [Authorize(Roles = "SuperAdmin,SystemAdmin,CAAdmin,Auditor")]
         public async Task<IActionResult> GetAllCaCertificates()
         {
             var certs = await _certService.GetAllCertificatesAsync();
@@ -41,6 +50,7 @@ namespace ModularCA.API.Controllers.v1.Admin
         }
 
         [HttpGet("system-ca")]
+        [Authorize(Roles = "SuperAdmin,SystemAdmin,CAAdmin,Auditor")]
         public async Task<IActionResult> GetSystemCaCertificates()
         {
             var certs = await _certService.GetAllCertificatesAsync();
@@ -54,6 +64,7 @@ namespace ModularCA.API.Controllers.v1.Admin
         }
 
         [HttpGet("{serial}")]
+        [Authorize(Roles = "SuperAdmin,SystemAdmin,CAAdmin,Auditor")]
         public async Task<ActionResult<CertificateInfoModel>> GetCertificateInfo(string serial)
         {
             var cert = await _certService.GetCertificateInfoAsync(serial);
@@ -63,6 +74,7 @@ namespace ModularCA.API.Controllers.v1.Admin
         }
 
         [HttpGet("{serial}/file")]
+        [Authorize(Roles = "SuperAdmin,SystemAdmin,CAAdmin,Auditor")]
         public async Task<IActionResult> GetCertificateFile(string serial)
         {
             var cert = await _certService.GetCertificateInfoAsync(serial);
