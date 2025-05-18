@@ -40,6 +40,7 @@ public class CertificateEntity
 
     public bool IsCA { get; set; } = false;
 
+    public bool IsReissued { get; set; } = false;
     public bool Revoked { get; set; } = false;
     public string? RevocationReason { get; set; }
     public DateTime? RevocationDate { get; set; }

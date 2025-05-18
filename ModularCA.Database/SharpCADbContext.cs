@@ -9,7 +9,7 @@ namespace ModularCA.Database;
 public class ModularCADbContext(DbContextOptions<ModularCADbContext> options) : DbContext(options)
 {
     public DbSet<CrlEntity> Crls { get; set; }
-    public DbSet<ScheduleEntity> Schedules { get; set; }
+    public DbSet<LdapConfigurationEntity> LdapConfigurations { get; set; }
     public DbSet<CertProfileEntity> CertProfiles { get; set; }
     public DbSet<SigningProfileEntity> SigningProfiles { get; set; }
     public DbSet<CertRequestEntity> CertificateRequests { get; set; }
@@ -25,7 +25,7 @@ public class ModularCADbContext(DbContextOptions<ModularCADbContext> options) : 
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<CrlEntity>().HasIndex(c => new { c.IssuerName, c.CrlNumber }).IsUnique();
-        modelBuilder.Entity<ScheduleEntity>().HasIndex(s => s.Name).IsUnique();
+        modelBuilder.Entity<LdapConfigurationEntity>().HasIndex(s => s.Name).IsUnique();
         modelBuilder.Entity<CertProfileEntity>().HasIndex(c => c.Name).IsUnique();
         modelBuilder.Entity<SigningProfileEntity>().HasIndex(s => s.Name).IsUnique();
         modelBuilder.Entity<CertRequestEntity>(entity =>

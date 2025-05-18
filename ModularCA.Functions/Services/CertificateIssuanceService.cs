@@ -28,6 +28,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 using ModularCA.Core.Implementations;
 using Org.BouncyCastle.Asn1.Ocsp;
 using Org.BouncyCastle.Tls;
+using System.Reflection.Metadata.Ecma335;
 
 namespace ModularCA.Functions.Services
 {
@@ -74,7 +75,7 @@ namespace ModularCA.Functions.Services
             if (!(NotBeforeMinimumDate(notAfter, csrEntity.SigningProfile)))
                 throw new Exception("notAfter date is before the minimum allowed date");
 
-            if(!IsValidKeyParameters(csrEntity.KeyAlgorithm, csrEntity.KeySize, csrEntity.SignatureAlgorithm, csrEntity.SigningProfile))
+            if (!IsValidKeyParameters(csrEntity.KeyAlgorithm, csrEntity.KeySize, csrEntity.SignatureAlgorithm, csrEntity.SigningProfile))
                 throw new Exception("Key algorithm and size are not compatible");
 
             var refCACert = _db.Certificates
@@ -158,10 +159,15 @@ namespace ModularCA.Functions.Services
             }
             var thumbprints = GetCertThumbprints(issuedCert);
 
+            byte[] certIv = null;
+            byte[] certEncryptedAes = null;
+            byte[] certEncryptedPrivKey = null;
 
-            var decryptedCsrPrivKey = DecryptPrivateKeyFromSerial(csrEntity.AesKeyEncryptionIv, csrEntity.EncryptedAesForPrivateKey, csrEntity.EncryptedPrivateKey, csrEntity.EncryptionCertSerialNumber, _db, _keystore);
-            var (certIv, certEncryptedAes, certEncryptedPrivKey) = KeyEncryptionUtil.EncryptPrivateKey(caMatch.GetPublicKey(), decryptedCsrPrivKey);
-
+            if (csrEntity.EncryptedPrivateKey != null)
+            {
+                var decryptedCsrPrivKey = DecryptPrivateKeyFromSerial(csrEntity.AesKeyEncryptionIv, csrEntity.EncryptedAesForPrivateKey, csrEntity.EncryptedPrivateKey, csrEntity.EncryptionCertSerialNumber, _db, _keystore);
+                (certIv, certEncryptedAes, certEncryptedPrivKey) = KeyEncryptionUtil.EncryptPrivateKey(caMatch.GetPublicKey(), decryptedCsrPrivKey);
+            }
             var certPem = output.ToString();
             var certBytes = issuedCert.GetEncoded();
 
@@ -192,6 +198,216 @@ namespace ModularCA.Functions.Services
 
             await _certStore.SaveCertificateAsync(certBytes, certModel);
             SetCsrStatus(_db, csrEntity, certModel.SerialNumber);
+            return certPem;
+        }
+
+        public async Task<string> ReissueCertificateAsync(Guid? certId, string? certSN, Guid? csrId, DateTime? notBefore, DateTime? notAfter, bool includeRoot)
+        {
+            var csrEntity = new CertRequestEntity();
+            if (!(certId == null))
+            {
+                csrEntity = _db.CertificateRequests
+                .Include(c => c.SigningProfile)
+                .Include(c => c.CertProfile)
+                .FirstOrDefaultAsync(c => c.IssuedCertificateId == certId).Result;
+                if (csrEntity == null)
+                {
+                    throw new Exception("Certificate not found.");
+                }
+            }
+            else if(certSN != null)
+            {
+                var certEntity = _db.Certificates.Where(c => c.SerialNumber == certSN).FirstOrDefaultAsync().Result;
+                if (certEntity == null)
+                {
+                    throw new Exception("Certificate not found.");
+                }
+                csrEntity = _db.CertificateRequests
+                    .Include(c => c.SigningProfile)
+                    .Include(c => c.CertProfile)
+                    .Where(c => c.IssuedCertificateId == certEntity.CertificateId).FirstOrDefaultAsync().Result;
+                if (csrEntity == null)
+                {
+                    throw new Exception("Certificate not found.");
+                }
+            }
+            else if (csrId != null)
+            {
+                csrEntity = _db.CertificateRequests
+                .Include(c => c.SigningProfile)
+                .Include(c => c.CertProfile)
+                .FirstOrDefaultAsync(c => c.Id == csrId).Result;
+                if (csrEntity == null)
+                {
+                    throw new Exception("Certificate not found.");
+                }
+            }
+
+                var prevCert = await _db.Certificates
+                    .Where(c => c.CertificateId == csrEntity.IssuedCertificateId)
+                    .FirstOrDefaultAsync();
+
+            if (prevCert.IsReissued)
+            {
+                throw new InvalidOperationException("Certificate has already been reissued");
+            }
+            if (csrEntity == null)
+                throw new InvalidOperationException("CSR not found");
+
+            if (!(ValidateCsrStatus(csrEntity) == false))
+                throw new InvalidOperationException("CSR is not valid for reissue");
+
+            if (csrEntity.SigningProfile == null)
+                throw new InvalidOperationException("No signing profile associated with CSR");
+
+            if (string.IsNullOrWhiteSpace(csrEntity.CSR))
+                throw new InvalidOperationException("CSR field is empty");
+
+            // Check revocation reason of the previous certificate
+
+
+            if (prevCert.RevocationReason == null)
+            {
+                prevCert.RevocationReason = "Superseded";
+                prevCert.Revoked = true;
+                prevCert.RevocationDate = DateTime.UtcNow;
+                _db.Certificates.Update(prevCert);
+            }
+
+
+
+            if (prevCert == null || string.IsNullOrWhiteSpace(prevCert.RevocationReason))
+                throw new InvalidOperationException("Previous certificate must be revoked to allow reissue.");
+
+            // Only allow reissue for specific revocation reasons
+            var allowedReasons = new[] { "Expired", "Superseded", "CessationOfOperation" };
+            if (!allowedReasons.Contains(prevCert.RevocationReason, StringComparer.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"Reissue is only allowed for revoked certificates with reasons:" +
+                    $" {string.Join(", ", allowedReasons)}.\nIn the event of a key compromise, create a new CSR.");
+
+            var csrParser = new CsrParserService();
+            var csr = csrParser.ParseFromPem(csrEntity.CSR);
+
+            if (!csr.Verify())
+                throw new InvalidOperationException("CSR signature verification failed");
+
+            if (!(NotBeyondMaximumDate(notAfter, csrEntity.SigningProfile)))
+                throw new Exception("NotAfter date is beyond the maximum allowed date");
+
+            if (!(NotBeforeMinimumDate(notAfter, csrEntity.SigningProfile)))
+                throw new Exception("notAfter date is before the minimum allowed date");
+
+            if (!IsValidKeyParameters(csrEntity.KeyAlgorithm, csrEntity.KeySize, csrEntity.SignatureAlgorithm, csrEntity.SigningProfile))
+                throw new Exception("Key algorithm and size are not compatible");
+
+            var refCACert = _db.Certificates
+                .FirstOrDefaultAsync(c => c.CertificateId == csrEntity.SigningProfile.IssuerId);
+            var caMatch = _keystore.GetTrustedAuthorities().Find(ca =>
+                ca.SubjectDN.ToString().Contains(refCACert.Result.SubjectDN, StringComparison.OrdinalIgnoreCase));
+
+            if (caMatch == null)
+                throw new InvalidOperationException($"No CA found with subject matching: {refCACert.Result.SubjectDN}");
+
+            var caMatchPrivKey = _keystore.GetPrivateKeyFor(caMatch);
+
+            var now = DateTime.UtcNow;
+            var timeMax = DateTime.UtcNow + Iso8601ParserUtil.ParseIso8601(csrEntity.SigningProfile.ValidityPeriodMax);
+
+            var validFrom = notBefore ?? now;
+            var validTo = notAfter ?? timeMax;
+
+            var serialNumber = BigIntegers.CreateRandomInRange(BigInteger.One, BigInteger.ValueOf(long.MaxValue), new SecureRandom());
+
+            var certGen = new X509V3CertificateGenerator();
+            certGen.SetSerialNumber(serialNumber);
+            certGen.SetIssuerDN(caMatch.SubjectDN);
+            certGen.SetSubjectDN(csr.GetCertificationRequestInfo().Subject);
+            certGen.SetNotBefore(validFrom);
+            certGen.SetNotAfter(validTo);
+            certGen.SetPublicKey(csr.GetPublicKey());
+
+            // === Extensions ===
+            certGen.AddExtension(X509Extensions.BasicConstraints, true, new BasicConstraints(false));
+
+            var extendedOids = SetupAllowedExtendedOids(csrEntity.SigningProfile.ExtendedKeyUsages, _db);
+            var standardOids = SetupAllowedStandardOids(csrEntity.SigningProfile.KeyUsages, _db);
+
+            // KeyUsage
+            if (standardOids.Count != 0)
+            {
+                int usageFlags = 0;
+                foreach (var key in standardOids)
+                {
+                    try
+                    {
+                        var usageInt = ParseKeyUsage(key);
+                        if (usageInt == -1) continue; // Skip invalid key usages
+                        usageFlags |= usageInt; // Combine via bitwise OR
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        Console.WriteLine($"Key Usage: {key} could not be added. Skipping.\n");
+                    }
+                }
+                if (usageFlags != 0)
+                {
+                    var keyUsage = new KeyUsage(usageFlags);
+                    certGen.AddExtension(X509Extensions.KeyUsage, true, keyUsage);
+                }
+            }
+
+            // ExtendedKeyUsage
+            if (extendedOids.Count != 0)
+            {
+                var usages = extendedOids.Select(u => new DerObjectIdentifier(u)).ToList();
+                certGen.AddExtension(X509Extensions.ExtendedKeyUsage, false, new ExtendedKeyUsage(usages));
+            }
+
+            // === Sign cert ===
+            var signer = new Asn1SignatureFactory(caMatch.SignatureAlgorithm, caMatchPrivKey, new SecureRandom());
+            var issuedCert = certGen.Generate(signer);
+
+            var output = new StringBuilder();
+            using (var writer = new StringWriter(output))
+            {
+                var pemWriter = new PemWriter(writer);
+                pemWriter.WriteObject(issuedCert);
+                if (includeRoot)
+                    pemWriter.WriteObject(caMatch);
+            }
+            var thumbprints = GetCertThumbprints(issuedCert);
+
+            var certPem = output.ToString();
+            var certBytes = issuedCert.GetEncoded();
+            
+            // === Save to DB ===
+            var certModel = new CertificateInfoModel
+            {
+                Pem = certPem,
+                SubjectDN = issuedCert.SubjectDN.ToString(),
+                Issuer = issuedCert.IssuerDN.ToString(),
+                SerialNumber = issuedCert.SerialNumber.ToString(16),
+                NotBefore = issuedCert.NotBefore,
+                NotAfter = issuedCert.NotAfter,
+                ValidFrom = validFrom,
+                ValidTo = validTo,
+                IsCA = false,
+                Revoked = false,
+                RevocationReason = null,
+                Thumbprints = thumbprints,
+                CertProfileId = csrEntity.CertProfile.Id,
+                SigningProfileId = csrEntity.SigningProfile.Id,
+                KeyUsages = standardOids ?? [],
+                ExtendedKeyUsages = extendedOids ?? [],
+                SubjectAlternativeNames = new List<string>()
+            };
+
+            await _certStore.SaveCertificateAsync(certBytes, certModel);
+            SetCsrStatus(_db, csrEntity, certModel.SerialNumber);
+
+            prevCert.IsReissued = true;
+            _db.Update(prevCert);
+            _db.SaveChanges();
             return certPem;
         }
 
@@ -330,14 +546,14 @@ namespace ModularCA.Functions.Services
 
             return true;
         }
-        private static bool IsKeyAlgorithmAndSizeCompatible(string algorithm, object keySizeOrCurve)
+        private static bool IsKeyAlgorithmAndSizeCompatible(string algorithm, string keySizeOrCurve)
         {
             // Accepts keySizeOrCurve as int (for RSA/DSA) or string (for ECDSA curves)
             switch (algorithm.ToUpperInvariant())
             {
                 case "RSA":
-                    if (keySizeOrCurve is int rsaSize)
-                        return rsaSize == 2048 || rsaSize == 3072 || rsaSize == 4096;
+                    if (keySizeOrCurve is string rsaSize)
+                        return rsaSize == "2048" || rsaSize == "3072" || rsaSize == "4096";
                     return false;
                 /* Not to be supported yet
                             case "DSA":

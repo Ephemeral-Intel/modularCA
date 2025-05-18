@@ -131,12 +131,51 @@ public class CsrService : ICsrService
         return csrPem;
     }
 
+    public async Task<string> UploadCsrAsync(string pem, Guid certProfileId, Guid signingProfileId)
+    {
+        // Load cert and signing profiles
+        var certProfile = await _dbContext.CertProfiles.FindAsync(certProfileId);
+        var signingProfile = await _dbContext.SigningProfiles.FindAsync(signingProfileId);
+        
+        if (certProfile == null)
+            throw new Exception("Certificate profile not found.");
+        if (signingProfile == null)
+            throw new Exception("Signing profile not found.");
+        // Parse CSR
+
+        var parsedCsr = CertificateUtil.ParseCsr(pem);
+
+        var parsedSignatureAlgorithm = GetSignatureAlgorithmNameFromOid(parsedCsr.SignatureAlgorithm);
+        parsedSignatureAlgorithm ??= parsedCsr.SignatureAlgorithm;
+        if (!IsValidKeyParameters(parsedCsr.KeyAlgorithm, parsedCsr.KeySize, parsedSignatureAlgorithm, signingProfile))
+            throw new Exception("Invalid key parameters.");
+        // Store CSR and references to cert/signing profiles
+        var entity = new CertRequestEntity
+        {
+            Subject = parsedCsr.SubjectName,
+            CSR = pem,
+            KeyAlgorithm = parsedCsr.KeyAlgorithm,
+            KeySize = parsedCsr.KeySize,
+            SignatureAlgorithm = parsedSignatureAlgorithm,
+            SubmittedAt = DateTime.UtcNow,
+            CertProfileId = certProfile.Id,
+            CertProfile = certProfile,
+            SigningProfileId = signingProfile.Id,
+            SigningProfile = signingProfile
+        };
+        _dbContext.CertificateRequests.Add(entity);
+        await _dbContext.SaveChangesAsync();
+        return pem;
+    }
+
     private static bool IsValidKeyParameters(string algorithm, string keySize, string signatureAlgorithm, SigningProfileEntity signingProfile)
     {
         // Deserialize allowed values from signing profile
         var validKeyAlgorithms = JsonSerializer.Deserialize<List<string>>(signingProfile.KeyAlgorithm);
         var validKeySizes = JsonSerializer.Deserialize<List<string>>(signingProfile.KeySize);
         var validSignatureAlgorithms = JsonSerializer.Deserialize<List<string>>(signingProfile.SignatureAlgorithm);
+
+        var signatureAlgorithmFromOid = GetSignatureAlgorithmNameFromOid(signatureAlgorithm);
 
         // Check presence
         if (validKeyAlgorithms == null || validKeySizes == null || validSignatureAlgorithms == null)
@@ -147,7 +186,7 @@ public class CsrService : ICsrService
             throw new Exception("Key algorithm \"" + algorithm + "\" not found in signing profile.");
         if(!validKeySizes.Contains(keySize))
             throw new Exception("Key size \"" + keySize + "\" not found in signing profile.");
-        if(!validSignatureAlgorithms.Contains(signatureAlgorithm, StringComparer.OrdinalIgnoreCase))
+        if (!validSignatureAlgorithms.Contains(signatureAlgorithm, StringComparer.OrdinalIgnoreCase))
             throw new Exception("Signature algorithm \"" + signatureAlgorithm + "\" not found in signing profile.");
 
         // Check compatibility: signature algorithm should contain the key algorithm (e.g., "SHA256withRSA" contains "RSA")
@@ -159,14 +198,14 @@ public class CsrService : ICsrService
 
         return true;
     }
-    private static bool IsKeyAlgorithmAndSizeCompatible(string algorithm, object keySizeOrCurve)
+    private static bool IsKeyAlgorithmAndSizeCompatible(string algorithm, string keySizeOrCurve)
     {
         // Accepts keySizeOrCurve as int (for RSA/DSA) or string (for ECDSA curves)
         switch (algorithm.ToUpperInvariant())
         {
             case "RSA":
-                if (keySizeOrCurve is int rsaSize)
-                    return rsaSize == 2048 || rsaSize == 3072 || rsaSize == 4096;
+                if (keySizeOrCurve is string rsaSize)
+                    return rsaSize == "2048" || rsaSize == "3072" || rsaSize == "4096";
                 return false;
 /* Not to be supported yet
             case "DSA":
@@ -185,6 +224,23 @@ public class CsrService : ICsrService
             default:
                 return false;
         }
+    }
+    // Add this helper method to map signature algorithm OIDs to friendly names
+    private static string GetSignatureAlgorithmNameFromOid(string oid)
+    {
+        // Common OID mappings; extend as needed
+        return oid switch
+        {
+            "1.2.840.113549.1.1.5" => "SHA1withRSA",
+            "1.2.840.113549.1.1.11" => "SHA256withRSA",
+            "1.2.840.113549.1.1.12" => "SHA384withRSA",
+            "1.2.840.113549.1.1.13" => "SHA512withRSA",
+            "1.2.840.10045.4.3.2" => "SHA256withECDSA",
+            "1.2.840.10045.4.3.3" => "SHA384withECDSA",
+            "1.2.840.10045.4.3.4" => "SHA512withECDSA",
+            "1.2.840.10040.4.3" => "SHA1withDSA",
+            _ => oid // fallback to OID string if unknown
+        };
     }
 
     

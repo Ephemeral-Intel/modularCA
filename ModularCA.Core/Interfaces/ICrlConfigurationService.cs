@@ -11,6 +11,11 @@ namespace ModularCA.Core.Interfaces
     {
         Task<CrlConfigurationDto> GetAsync();
         Task UpdateAsync(UpdateCrlConfigurationRequest request);
+        Task<IEnumerable<CrlConfigurationDto>> GetAllAsync();
+        Task<CrlConfigurationDto> GetByIdAsync(Guid id);
+        Task<CrlConfigurationDto> CreateAsync(CreateCrlConfigurationRequest request);
+        Task SetEnabledAsync(Guid id, bool enabled);
+        Task DeleteAsync(Guid id);
     }
 
 }

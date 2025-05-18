@@ -7,8 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="DbContext\" />
-    <Folder Include="Services\" />
+    <Compile Remove="DbContext\**" />
+    <Compile Remove="Services\**" />
+    <EmbeddedResource Remove="DbContext\**" />
+    <EmbeddedResource Remove="Services\**" />
+    <None Remove="DbContext\**" />
+    <None Remove="Services\**" />
   </ItemGroup>
 
 </Project>

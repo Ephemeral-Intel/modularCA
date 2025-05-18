@@ -19,7 +19,6 @@ using System.Security.Cryptography.X509Certificates;
 using Microsoft.EntityFrameworkCore;
 using static ModularCA.Bootstrap.Services.KeystoreService;
 using Org.BouncyCastle.Pkcs;
-using ModularCA.Bootstrap;
 using ModularCA.Core.Implementations;
 using Org.BouncyCastle.Math;
 using ModularCA.Core.Models;
@@ -206,7 +205,9 @@ public class BootstrapModularCA
 
         AddFeatureFlagsToDb(dbContext, defaultFlags);
 
-        CreateCrlSchedule(dbContext);
+        var caCertEntity = GetCertificateFromDb(dbContext, signedCaCert.SubjectDN.ToString());
+
+        CreateCrlSchedule(dbContext, caCertEntity);
 
         WriteKeystorePasswordsToFile(configDir, keystorePasswords, keystoreFilePasswords);
 
@@ -279,13 +280,13 @@ public class BootstrapModularCA
             
             }
             Console.WriteLine("✅ Destruction confirmed. Proceeding...\n");
-            DeleteArtifacts(certPath, trustPath, db, conn, bootstrapConfig);
+            DeleteArtifacts(certPath, trustPath);
             ReconstructDatabase(db, conn, bootstrapConfig);
             
         }
     }
 
-    public static void DeleteArtifacts(string certPath, string trustPath, BootstrapDbContext db, MySqlConnection conn, YamlBootstrapLoader.BootstrapConfig bootstrapConfig)
+    public static void DeleteArtifacts(string certPath, string trustPath)
     {
         if (File.Exists(certPath))
             File.Delete(certPath);
@@ -300,30 +301,12 @@ public class BootstrapModularCA
         {
             Console.WriteLine($"(i) {trustPath} not found. Skipping deletion.");
         }
-
-        try
-        {
-
-            using var dropCmd = new MySqlCommand($"DROP DATABASE IF EXISTS `{bootstrapConfig.SqlApp.Database}`", conn);
-            dropCmd.ExecuteNonQuery();
-
-            using var createCmd = new MySqlCommand($"CREATE DATABASE `{bootstrapConfig.SqlApp.Database}`", conn);
-            createCmd.ExecuteNonQuery();
-            db.Database.EnsureCreated();
-
-            Console.WriteLine($"✓ Database '{bootstrapConfig.SqlApp.Database}' dropped and recreated.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"(!!) Failed to reset database: {ex.Message}");
-        }
     }
 
     public static void ReconstructDatabase(BootstrapDbContext db, MySqlConnection conn, YamlBootstrapLoader.BootstrapConfig bootstrapConfig)
     {
         try
         {
-            conn.Open();
             using var dropCmd = new MySqlCommand($"DROP DATABASE IF EXISTS `{bootstrapConfig.SqlApp.Database}`", conn);
             dropCmd.ExecuteNonQuery();
             using var createCmd = new MySqlCommand($"CREATE DATABASE `{bootstrapConfig.SqlApp.Database}`", conn);
@@ -681,28 +664,40 @@ public class BootstrapModularCA
         }
     }
 
-    public static void CreateCrlSchedule(BootstrapDbContext db)
+    public static void CreateCrlSchedule(BootstrapDbContext db, CertificateEntity caCertificate)
     {
         var crlSchedule = new CrlConfigurationEntity
         {
             Name = "Default CRL Schedule",
             Description = "Default schedule for CRL generation",
-            Interval = TimeSpan.FromDays(7),
+            IssuerDN = caCertificate.SubjectDN,
+            UpdateInterval = "*/30 * * * *",
             OverlapPeriod = TimeSpan.FromHours(1),
-            EnableDelta = false,
-            LastGenerated = DateTime.UtcNow
+            IsDelta = false,
+            LastGenerated = DateTime.UtcNow,
+            CaCertificate = caCertificate,
+            CaCertificateId = caCertificate.CertificateId,
+
         };
         db.CrlConfigurations.Add(crlSchedule);
         db.SaveChanges();
         Console.WriteLine($"✓ CRL schedule '{crlSchedule.Name}' added to database.");
     }
-
+    public static CertificateEntity GetCertificateFromDb(BootstrapDbContext db, string certName)
+    {
+        var cert = db.Certificates
+            .Where(c => c.SubjectDN == certName)
+            .FirstOrDefaultAsync();
+        if (cert.Result == null)
+            throw new Exception("Certificate not found.");
+        return cert.Result;
+    }
 
     public static void WriteKeystorePasswordsToFile(string configDir, Dictionary<string, string> keystorePasswords, Dictionary<string, string> secondaryPasses)
     {
         var yamlLines = keystorePasswords.Select(kvp =>
         {
-            var secondary = secondaryPasses.ContainsKey(kvp.Key) ? secondaryPasses[kvp.Key] : "";
+            var secondary = secondaryPasses.TryGetValue(kvp.Key, out string? value) ? value : "";
             return $"{kvp.Key}: {secondary}";
         }).ToList();
 
