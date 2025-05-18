@@ -8,11 +8,11 @@ using ModularCA.Core.Utils;
 using System.Security.Cryptography.X509Certificates;
 using System.Runtime.ConstrainedExecution;
 
-namespace ModularCA.API.Controllers.User;
+namespace ModularCA.API.Controllers.v1.User;
 
 
 [ApiController]
-[Route("api/user/certificate")]
+[Route("api/v1/user/certificates")]
 public class UserCertificateController(
     ICertificateStore certStore,
     ICertificateAuthority certAuthority
@@ -21,7 +21,7 @@ public class UserCertificateController(
     private readonly ICertificateStore _certStore = certStore;
     private readonly ICertificateAuthority _certAuthority = certAuthority;
 
-    [HttpGet("list")]
+    [HttpGet]
     public async Task<ActionResult<IEnumerable<CertificateInfoModel>>> ListCertificates()
     {
         var certs = await _certStore.ListAsync();
@@ -46,19 +46,28 @@ public class UserCertificateController(
         return Ok(cert);
     }
 
-    [HttpGet("{serial}/pem")]
-    public async Task<IActionResult> GetCertificatePem(string serial)
+    [HttpGet("{serial}/file")]
+    public async Task<IActionResult> GetCertificate(string serial)
     {
         var raw = await _certStore.GetCertificateInfoAsync(serial);
         // Hide CA certs and System cert
         if (raw == null || raw.IsCA || raw.SubjectDN?.Contains("System Signing CA Certificate") == true)
             return NotFound();
-        if (raw != null)
+        var accept = Request.Headers.Accept.ToString().ToLowerInvariant();
+        
+        if (accept.Contains("application/x-x509-ca-cert") || accept.Contains("application/pkix-cert") || accept.Contains("der") || accept.Contains("application/octet-stream"))
         {
-            return Content(raw.Pem, "application/x-pem-file");
-
+            var cert = CertificateUtil.ParseFromPem(raw.Pem);
+            var certName = CertificateUtil.ParseCnFromPem(raw.Pem);
+            var fileName = $"{certName}.cer";
+            return File(cert.GetEncoded(), "application/x-x509-ca-cert", fileName);
         }
-        return NotFound();
+        else 
+        {
+            var certName = CertificateUtil.ParseCnFromPem(raw.Pem);
+            var fileName = $"{certName}.pem";
+            return File(raw.Pem, "application/x-pem-file", fileName);
+        }
     }
 
 }

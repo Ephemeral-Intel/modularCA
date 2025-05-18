@@ -4,10 +4,10 @@ using ModularCA.Core.Interfaces;
 using ModularCA.Shared.Models.Revocation;
 using ModularCA.Shared.Models.Issuance;
 
-namespace ModularCA.API.Controllers.Admin;
+namespace ModularCA.API.Controllers.v1.Admin;
 
 [ApiController]
-[Route("api/admin/revocation")]
+[Route("api/v1/admin/revocation")]
 [AllowAnonymous] // Replace with [Authorize(Roles = "CAAdmin,SuperAdmin")] as needed
 public class AdminRevocationController(
     ICertificateRevocationService revocationService

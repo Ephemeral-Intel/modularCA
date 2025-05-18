@@ -6,10 +6,10 @@ using ModularCA.Core.Utils;
 using ModularCA.Functions.Services;
 using ModularCA.Shared.Models.Csr;
 
-namespace ModularCA.API.Controllers.User;
+namespace ModularCA.API.Controllers.v1.User;
 
 [ApiController]
-[Route("api/user/request")]
+[Route("api/v1/user/request")]
 [AllowAnonymous] // Replace with [Authorize(Roles = "CAAdmin,SuperAdmin")] later
 public class UserCertSignRequestController(
     ICsrService csrService

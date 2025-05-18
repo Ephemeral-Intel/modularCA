@@ -5,10 +5,10 @@ using ModularCA.Core.Models;
 using ModularCA.Core.Services;
 using ModularCA.Shared.Models.CertProfiles;
 
-namespace ModularCA.API.Controllers.Admin;
+namespace ModularCA.API.Controllers.v1.Admin;
 
 [ApiController]
-[Route("api/admin/cert-profiles")]
+[Route("api/v1/admin/cert-profiles")]
 [AllowAnonymous]
 //[Authorize(Roles = "CAAdmin,SuperAdmin")]
 public class AdminCertProfileController(ICertProfileService certProfileService) : ControllerBase

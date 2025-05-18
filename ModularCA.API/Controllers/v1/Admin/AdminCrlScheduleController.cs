@@ -5,18 +5,18 @@ using ModularCA.Shared.Models.Crl;
 using System;
 using System.Threading.Tasks;
 
-namespace ModularCA.API.Controllers.Admin
+namespace ModularCA.API.Controllers.v1.Admin
 {
     [ApiController]
-    [Route("api/admin/schedule")]
+    [Route("api/v1/admin/schedule/crl")]
     //[Authorize(Roles = "CAAdmin,SuperAdmin")] // We aren't ready for this yet
     [AllowAnonymous]
-    public class AdminScheduleController(ICrlConfigurationService crlConfigService) : ControllerBase
+    public class AdminCrlScheduleController(ICrlConfigurationService crlConfigService) : ControllerBase
     {
         private readonly ICrlConfigurationService _crlConfigService = crlConfigService;
 
         // List all CRL scheduled jobs
-        [HttpGet("crl")]
+        [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             // You may want to return a list, adapt service as needed
@@ -25,7 +25,7 @@ namespace ModularCA.API.Controllers.Admin
         }
 
         // Create a new CRL scheduled job
-        [HttpPost("crl")]
+        [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateCrlConfigurationRequest request)
         {
             var job = await _crlConfigService.CreateAsync(request);
@@ -33,7 +33,7 @@ namespace ModularCA.API.Controllers.Admin
         }
 
         // Get a specific CRL scheduled job by ID
-        [HttpGet("crl/{id:guid}")]
+        [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {
             var job = await _crlConfigService.GetByIdAsync(id);
@@ -43,7 +43,7 @@ namespace ModularCA.API.Controllers.Admin
         }
 
         // Update a CRL scheduled job
-        [HttpPut("crl/{id:guid}")]
+        [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCrlConfigurationRequest request)
         {
             request.TaskId = id;
@@ -52,7 +52,7 @@ namespace ModularCA.API.Controllers.Admin
         }
 
         // Enable a CRL scheduled job
-        [HttpPost("crl/{id:guid}/enable")]
+        [HttpPost("{id:guid}/enable")]
         public async Task<IActionResult> Enable(Guid id)
         {
             await _crlConfigService.SetEnabledAsync(id, true);
@@ -60,7 +60,7 @@ namespace ModularCA.API.Controllers.Admin
         }
 
         // Disable a CRL scheduled job
-        [HttpPost("crl/{id:guid}/disable")]
+        [HttpPost("{id:guid}/disable")]
         public async Task<IActionResult> Disable(Guid id)
         {
             await _crlConfigService.SetEnabledAsync(id, false);
@@ -68,7 +68,7 @@ namespace ModularCA.API.Controllers.Admin
         }
 
         // Delete a CRL scheduled job
-        [HttpDelete("crl/{id:guid}")]
+        [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
             await _crlConfigService.DeleteAsync(id);

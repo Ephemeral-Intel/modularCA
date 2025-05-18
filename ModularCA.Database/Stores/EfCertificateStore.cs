@@ -204,15 +204,20 @@ public class EfCertificateStore(ModularCADbContext dbContext) : ICertificateStor
 
         return new CertificateInfoModel
         {
-            CertificateId = entity.CertificateId, // <== Add this
-            SubjectDN = entity.SubjectDN,
+            Pem = entity.Pem,
+            CertificateId = entity.CertificateId,
             SerialNumber = entity.SerialNumber,
+            SubjectDN = entity.SubjectDN,
+            Issuer = entity.Issuer,
+            NotBefore = entity.NotBefore,
+            NotAfter = entity.NotAfter,
+            Thumbprints = entity.Thumbprints,
+            IsCA = entity.IsCA,
             ValidFrom = entity.ValidFrom,
             ValidTo = entity.ValidTo,
-            Revoked = false,
-            RevocationReason = "", // TODO: support revocation table later
+            Revoked = entity.Revoked,
+            RevocationReason = entity.RevocationReason ?? string.Empty,
             RevocationDate = entity.RevocationDate,
-            Pem = entity.Pem,
             SigningProfileId = entity.SigningProfileId ?? Guid.Empty,
         };
     }

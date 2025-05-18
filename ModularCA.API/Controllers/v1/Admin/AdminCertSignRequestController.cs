@@ -6,10 +6,10 @@ using ModularCA.Core.Utils;
 using ModularCA.Functions.Services;
 using ModularCA.Shared.Models.Csr;
 
-namespace ModularCA.API.Controllers.Admin;
+namespace ModularCA.API.Controllers.v1.Admin;
 
 [ApiController]
-[Route("api/admin/request")]
+[Route("api/v1/admin/request")]
 [AllowAnonymous] // Replace with [Authorize(Roles = "CAAdmin,SuperAdmin")] later
 public class AdminCertSignRequestController(
     ICsrService csrService

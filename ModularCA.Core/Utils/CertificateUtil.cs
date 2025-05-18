@@ -257,5 +257,18 @@ public static class CertificateUtil
         return crl.GetEncoded();
     }
 
+    public static string ParseCnFromPem(string pem)
+    {
+        var certByte = ParseCertificate(ParseFromPem(pem));
+        var cnPart = certByte.SubjectDN.Split(',')[0].Trim();
+        return cnPart.StartsWith("CN=", StringComparison.OrdinalIgnoreCase) ? cnPart.Substring(3).Trim() : cnPart;
+    }
+
+    public static string ParseCnFromDer(byte[] der)
+    {
+        var cert = new X509Certificate(der);
+        var cnPart = cert.SubjectDN.ToString().Split(',')[0].Trim();
+        return cnPart.StartsWith("CN=", StringComparison.OrdinalIgnoreCase) ? cnPart.Substring(3).Trim() : cnPart;
+    }
 }
         

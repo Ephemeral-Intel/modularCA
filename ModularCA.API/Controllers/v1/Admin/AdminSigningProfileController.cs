@@ -4,10 +4,10 @@ using ModularCA.Shared.Models.SigningProfiles;
 using ModularCA.Core.Interfaces;
 using ModularCA.Database.Services;
 
-namespace ModularCA.API.Controllers.Admin
+namespace ModularCA.API.Controllers.v1.Admin
 {
     [ApiController]
-    [Route("api/admin/signing-profiles")]
+    [Route("api/v1/admin/signing-profiles")]
     [AllowAnonymous]
     //[Authorize(Roles = "CAAdmin,SuperAdmin")]
     public class AdminSigningProfileController(ISigningProfileService service) : ControllerBase
