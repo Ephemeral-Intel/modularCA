@@ -16,6 +16,7 @@ using Org.BouncyCastle.X509.Extension;
 using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Pkcs;
 using ModularCA.Shared.Models.Csr;
+using ModularCA.Shared.Entities;
 
 
 namespace ModularCA.Core.Utils;
@@ -245,6 +246,15 @@ public static class CertificateUtil
             CertificateProfileId = certificateProfileId,
             SigningProfileId = signingProfileId
         };
+    }
+
+    public static byte[] ParseCrlFromPem(string pem)
+    {
+        using var sr = new StringReader(pem);
+        var pemReader = new PemReader(sr);
+        var crl = pemReader.ReadObject() as X509Crl
+            ?? throw new InvalidOperationException("Invalid PEM CRL.");
+        return crl.GetEncoded();
     }
 
 }

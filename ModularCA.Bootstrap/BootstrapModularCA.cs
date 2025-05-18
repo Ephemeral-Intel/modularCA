@@ -205,7 +205,9 @@ public class BootstrapModularCA
 
         AddFeatureFlagsToDb(dbContext, defaultFlags);
 
-        CreateCrlSchedule(dbContext);
+        var caCertEntity = GetCertificateFromDb(dbContext, signedCaCert.SubjectDN.ToString());
+
+        CreateCrlSchedule(dbContext, caCertEntity);
 
         WriteKeystorePasswordsToFile(configDir, keystorePasswords, keystoreFilePasswords);
 
@@ -662,22 +664,34 @@ public class BootstrapModularCA
         }
     }
 
-    public static void CreateCrlSchedule(BootstrapDbContext db)
+    public static void CreateCrlSchedule(BootstrapDbContext db, CertificateEntity caCertificate)
     {
         var crlSchedule = new CrlConfigurationEntity
         {
             Name = "Default CRL Schedule",
             Description = "Default schedule for CRL generation",
-            Interval = TimeSpan.FromDays(7),
+            IssuerDN = caCertificate.SubjectDN,
+            UpdateInterval = "*/30 * * * *",
             OverlapPeriod = TimeSpan.FromHours(1),
-            EnableDelta = false,
-            LastGenerated = DateTime.UtcNow
+            IsDelta = false,
+            LastGenerated = DateTime.UtcNow,
+            CaCertificate = caCertificate,
+            CaCertificateId = caCertificate.CertificateId,
+
         };
         db.CrlConfigurations.Add(crlSchedule);
         db.SaveChanges();
         Console.WriteLine($"✓ CRL schedule '{crlSchedule.Name}' added to database.");
     }
-
+    public static CertificateEntity GetCertificateFromDb(BootstrapDbContext db, string certName)
+    {
+        var cert = db.Certificates
+            .Where(c => c.SubjectDN == certName)
+            .FirstOrDefaultAsync();
+        if (cert.Result == null)
+            throw new Exception("Certificate not found.");
+        return cert.Result;
+    }
 
     public static void WriteKeystorePasswordsToFile(string configDir, Dictionary<string, string> keystorePasswords, Dictionary<string, string> secondaryPasses)
     {

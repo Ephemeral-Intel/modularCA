@@ -10,7 +10,7 @@ namespace ModularCA.Bootstrap.Data
         private readonly string _connectionString = connectionString;
 
         public DbSet<OIDOptionEntity> OIDOptions { get; set; } = null!;
-        public DbSet<ScheduleEntity> Schedules { get; set; } = null!;
+        public DbSet<LdapConfigurationEntity> LdapConfigurations { get; set; } = null!;
         public DbSet<CertificateEntity> Certificates { get; set; } = null!;
         public DbSet<CertRequestEntity> CertificateRequests { get; set; } = null!;
         public DbSet<CrlEntity> Crls { get; set; } = null!;

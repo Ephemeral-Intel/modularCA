@@ -1,4 +1,5 @@
 using System.DirectoryServices.Protocols;
+using ModularCA.Shared.Models.Scheduler;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,7 +20,7 @@ public class LdapPublisherJob
         _logger = logger;
     }
 
-    public async Task RunAsync(LdapScheduleOptions options, CancellationToken cancellationToken)
+    public async Task RunAsync(LdapScheduleOptions options,string cronExpression, CancellationToken cancellationToken)
     {
         try
         {
@@ -85,17 +86,4 @@ public class LdapPublisherJob
             _logger.LogError(ex, "LDAP publishing failed for {CaName}", options.CaName);
         }
     }
-}
-
-public class LdapScheduleOptions
-{
-    public string CaName { get; set; } = string.Empty;
-    public string LdapHost { get; set; } = string.Empty;
-    public int LdapPort { get; set; } = 389;
-    public string BaseDn { get; set; } = string.Empty;
-    public string Username { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-    public bool PublishCRL { get; set; }
-    public bool PublishDelta { get; set; }
-    public bool PublishCACert { get; set; }
 }

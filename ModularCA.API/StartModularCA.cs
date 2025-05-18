@@ -21,6 +21,8 @@ using System.Linq;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
+using ModularCA.Functions.Scheduler.JobRunners;
+using ModularCA.Scheduler.JobRunners;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +42,13 @@ builder.Services.AddScoped<ISigningProfileService, EfSigningProfileService>();
 builder.Services.AddScoped<ICertificateIssuanceService, CertificateIssuanceService>();
 
 builder.Services.AddScoped<ICsrService, CsrService>();
+builder.Services.AddScoped<ICrlService, CrlService>();
+
+builder.Services.AddScoped<ICrlConfigurationService, EfCrlConfigurationService>();
+builder.Services.AddScoped<LdapPublisherJob>();
+builder.Services.AddScoped<CrlExportJob>();
+builder.Services.AddScoped<SchedulerJobService>();
+builder.Services.AddHostedService<SchedulerService>();
 
 builder.Services.AddScoped<ICertificateRevocationService, CertificateRevocationService>();
 
